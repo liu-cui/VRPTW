@@ -1,4 +1,6 @@
+import math
 import re
+from log import logger
 
 
 class Data:
@@ -53,15 +55,25 @@ def read_data(data, file_path, cust_num):
     data.due_time.append(data.due_time[0])
     data.service_time.append(data.service_time[0])
 
-    print(data.name)
-    print(data.vehicle_num, data.vehicle_capacity)
-    print(data.cust_no)
-    print(data.cor_x, data.cor_y)
-    print(data.demand)
-    print(data.ready_time)
-    print(data.due_time)
-    print(data.service_time)
-    print()
+    data.dist_matrix = [[0.] * data.node_num for _ in range(data.node_num)]
+    for i in range(data.node_num):
+        for j in range(data.node_num):
+            temp = (data.cor_x[i] - data.cor_x[j]) ** 2 + (data.cor_y[i] - data.cor_y[j]) ** 2
+            data.dist_matrix[i][j] = round(math.sqrt(temp), 1)
+
+    # print(data.name)
+    # print(data.vehicle_num, data.vehicle_capacity)
+    # print(data.cust_no)
+    # print(data.cor_x, data.cor_y)
+    # print(data.demand)
+    # print(data.ready_time)
+    # print(data.due_time)
+    # print(data.service_time)
+    # print(data.dist_matrix)
+    return data
 
 
-read_data(data=Data(), file_path="src/sources/solomon-100/c101.txt", cust_num=10)
+if __name__ == '__main__':
+    logger.info("Import VRPTW Data")
+    read_data(data=Data(), file_path="src/sources/solomon-100/c101.txt", cust_num=10)
+
