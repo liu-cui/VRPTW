@@ -1,5 +1,4 @@
 from gurobipy import *
-
 from common.data import Data
 
 
@@ -28,16 +27,16 @@ def gb_solver(data: Data, vehicle_num):
                    if i != j)
     model.setObjective(obj, GRB.MINIMIZE)
 
-    # C2：
+    # C2: 每个顾客至多被服务一次
     for i in range(1, data.node_num-1):
         model.addConstr(quicksum(x[i, j, k] for j in range(data.node_num) for k in range(data.vehicle_num) if i != j)
                         == 1)
 
-    # C3
+    # C3: 车从车场出发
     for k in range(data.vehicle_num):
         model.addConstr(quicksum(x[0, j, k] for j in range(data.node_num) if j != 0) == 1)
 
-    # C4
+    # C4: 流平衡
     for k in range(data.vehicle_num):
         for h in range(1, data.node_num - 1):
             expr1 = LinExpr(0)
@@ -52,12 +51,12 @@ def gb_solver(data: Data, vehicle_num):
             expr1.clear()
             expr2.clear()
 
-    # C5
+    # C5: 服务结束，车返回车场
     for k in range(data.vehicle_num):
         model.addConstr(quicksum(x[i, data.node_num - 1, k]
                                  for i in range(data.node_num) if i != data.node_num - 1) == 1)
 
-    # C6
+    # C6：时间窗约束：不能晚于下个顾客开始服务时间
     for i in range(data.node_num):
         for k in range(data.vehicle_num):
             for j in range(data.node_num):
@@ -65,31 +64,23 @@ def gb_solver(data: Data, vehicle_num):
                     model.addConstr(w[i, k] + data.service_time[i] + data.dist_matrix[i][j] - w[j, k]
                                     <= (1 - x[i, j, k]) * BigM)
 
-    # C7-C8
+    # C7-C8：时间窗约束：当前顾客的服务时间窗约束
     for i in range(1, data.node_num - 1):
         for k in range(data.vehicle_num):
             model.addConstr(w[i, k] >= data.ready_time[i])
             model.addConstr(w[i, k] <= data.due_time[i])
 
-    # C9
+    # C9：车容量约束
     for k in range(data.vehicle_num):
         model.addConstr(quicksum(x[i, j, k] * data.demand[i] for i in range(data.node_num) for j in range(data.node_num)
                                  if i != j) <= data.vehicle_capacity)
 
     model.optimize()
-    print("\n\n-----optimal value-----")
-    print(model.ObjVal)
 
     for key in x.keys():
+        # print(key)
         if x[key].x > 0:
-            print(x[key].VarName + ' = ', x[key].x)
-
-
-
-
-
-
-
-
-
-
+            print(key)
+            # print(x[key].VarName + ' = ', x[key].x)
+    #
+    # print(model.ObjVal)
