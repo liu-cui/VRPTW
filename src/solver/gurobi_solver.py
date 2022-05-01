@@ -1,10 +1,22 @@
 from gurobipy import *
 from common.data import Data
+import numpy as np
 
 
 def gb_solver(data: Data, vehicle_num):
     data.vehicle_num = vehicle_num
     model = Model("VRPTW")
+
+    N = [i for i in range(1, data.cust_num + 1)]
+    V = [0] + N + [data.cust_num + 1]
+    A = [(i, j) for i in V for j in V if i != j]
+    c = {(i, j): np.hypot(data.cor_x[i] - data.cor_x[j], data.cor_y[i] - data.cor_y[j]) for i, j in A}
+
+    print(N)
+    print(V)
+    print(A)
+    print(c)
+
     x = {}
     w = {}
     BigM = 1e6
@@ -75,12 +87,17 @@ def gb_solver(data: Data, vehicle_num):
         model.addConstr(quicksum(x[i, j, k] * data.demand[i] for i in range(data.node_num) for j in range(data.node_num)
                                  if i != j) <= data.vehicle_capacity)
 
+    model.setParam("LogToConsole", False)
     model.optimize()
 
+    # active_arcs = [a for a in A if x[a].x > 0.99]
+    active_arcs = []
     for key in x.keys():
-        # print(key)
         if x[key].x > 0:
             print(key)
-            # print(x[key].VarName + ' = ', x[key].x)
-    #
+            print(x[key].VarName + ' = ', x[key].x)
+            a = (key[0], key[1])
+            active_arcs.append(a)
+            print(active_arcs)
     # print(model.ObjVal)
+    return active_arcs
